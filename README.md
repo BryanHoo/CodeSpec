@@ -102,4 +102,4 @@ npm install -g @fission-ai/openspec@latest
 
 ## License
 
-本仓库暂未提供 `LICENSE` 文件；如需开源分发，请先补齐许可证声明。
+MIT License（见 `LICENSE`）。
