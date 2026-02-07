@@ -4,23 +4,55 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  ./scripts/install.sh [--force]
+  ./scripts/install.sh [--force] [--path <skills-root>]
 
 Installs codespec skills via native skill discovery by symlinking:
   ~/.agents/skills/codespec -> <this-repo>/skills
+If --path is provided, also creates:
+  <skills-root>/codespec -> <this-repo>/skills
 
 Options:
   --force   Replace existing ~/.agents/skills/codespec if present
+  --path    Skills root directory. Creates <skills-root>/codespec symlink.
+            Default: ~/.agents/skills
 EOF
 }
 
 force=0
-for arg in "${@:-}"; do
-  case "$arg" in
-    --force) force=1 ;;
-    -h|--help) usage; exit 0 ;;
+target_root="${HOME}/.agents/skills"
+
+expand_path() {
+  local p="$1"
+  if [[ "$p" == "~" ]]; then
+    echo "$HOME"
+  elif [[ "$p" == "~/"* ]]; then
+    echo "$HOME/${p#~/}"
+  else
+    echo "$p"
+  fi
+}
+
+while [[ $# -gt 0 ]]; do
+  case "${1:-}" in
+    --force)
+      force=1
+      shift
+      ;;
+    --path)
+      if [[ $# -lt 2 ]]; then
+        echo "ERROR: Missing value for --path" >&2
+        usage >&2
+        exit 2
+      fi
+      target_root="$(expand_path "$2")"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
     *)
-      echo "ERROR: Unknown argument: $arg" >&2
+      echo "ERROR: Unknown argument: ${1:-}" >&2
       usage >&2
       exit 2
       ;;
@@ -35,10 +67,16 @@ if [[ ! -d "$skills_dir" ]]; then
   exit 1
 fi
 
-target_root="${HOME}/.agents/skills"
-target_link="${target_root}/codespec"
+agents_root="${HOME}/.agents/skills"
 
 mkdir -p "$target_root"
+mkdir -p "$agents_root"
+
+target_root="$(cd "$target_root" && pwd)"
+agents_root="$(cd "$agents_root" && pwd)"
+
+target_link="${target_root}/codespec"
+agents_link="${agents_root}/codespec"
 
 resolve_symlink_target() {
   local link_path="$1"
@@ -51,30 +89,45 @@ resolve_symlink_target() {
   fi
 }
 
-if [[ -e "$target_link" || -L "$target_link" ]]; then
-  if [[ -L "$target_link" ]]; then
-    existing_target="$(resolve_symlink_target "$target_link")"
-    desired_target="$(cd "$skills_dir" && pwd)"
-    if [[ "$existing_target" == "$desired_target" ]]; then
-      echo "OK: codespec skills already installed at: $target_link"
-      exit 0
+install_link() {
+  local link_path="$1"
+  local desired_target="$2"
+
+  if [[ -e "$link_path" || -L "$link_path" ]]; then
+    if [[ -L "$link_path" ]]; then
+      local existing_target
+      existing_target="$(resolve_symlink_target "$link_path")"
+      if [[ "$existing_target" == "$desired_target" ]]; then
+        echo "OK: codespec skills already installed at: $link_path"
+        return 0
+      fi
     fi
+
+    if [[ "$force" -ne 1 ]]; then
+      echo "ERROR: Path already exists: $link_path" >&2
+      echo "Hint: re-run with --force to replace it." >&2
+      exit 1
+    fi
+
+    rm -rf "$link_path"
   fi
 
-  if [[ "$force" -ne 1 ]]; then
-    echo "ERROR: Path already exists: $target_link" >&2
-    echo "Hint: re-run with --force to replace it." >&2
-    exit 1
-  fi
+  ln -s "$skills_dir" "$link_path"
+  echo "OK: Installed codespec skills"
+  echo "  $link_path -> $skills_dir"
+}
 
-  rm -rf "$target_link"
+desired_target="$(cd "$skills_dir" && pwd)"
+
+install_link "$target_link" "$desired_target"
+if [[ "$agents_link" != "$target_link" ]]; then
+  install_link "$agents_link" "$desired_target"
 fi
 
-ln -s "$skills_dir" "$target_link"
-
-echo "OK: Installed codespec skills"
-echo "  $target_link -> $skills_dir"
 echo
 echo "Next:"
 echo "  - Restart your AI coding assistant (if it only scans skills at startup)"
 echo "  - Verify: ls -la \"$target_link\""
+if [[ "$agents_link" != "$target_link" ]]; then
+  echo "  - Also installed: ls -la \"$agents_link\""
+fi

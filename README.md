@@ -31,10 +31,22 @@
 ./scripts/install.sh
 ```
 
+指定自定义 skills 目录：
+
+```bash
+./scripts/install.sh --path <skills-root>
+```
+
 Windows（PowerShell）：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
+```
+
+指定自定义 skills 目录：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Path "<skills-root>"
 ```
 
 安装后重启你的 AI coding assistant（如果它只在启动时扫描 skills）。

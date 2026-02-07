@@ -13,10 +13,22 @@
 ./scripts/install.sh
 ```
 
+指定自定义 skills 目录（会创建 `<skills-root>/codespec`，同时也会确保 `~/.agents/skills/codespec` 存在）：
+
+```bash
+./scripts/install.sh --path <skills-root>
+```
+
 Windows（PowerShell）：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
+```
+
+指定自定义 skills 目录（会创建 `<skills-root>\codespec`，同时也会确保 `$HOME\.agents\skills\codespec` 存在）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Path "<skills-root>"
 ```
 
 如果你已经有 `~/.agents/skills/codespec`，并且想覆盖：
@@ -29,6 +41,18 @@ Windows（PowerShell）：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Force
+```
+
+自定义目录 + 覆盖：
+
+```bash
+./scripts/install.sh --force --path <skills-root>
+```
+
+Windows（PowerShell）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Force -Path "<skills-root>"
 ```
 
 验证：
@@ -49,7 +73,9 @@ dir $HOME\.agents\skills\codespec
 
 本仓库默认把 skills 安装到 `~/.agents/skills/codespec`，因为 `codespec-init` 会从该路径读取 OpenSpec 模板资产（`codespec-init/assets/openspec/...`）。
 
-如果你的工具需要从其它目录加载 skills，你可以**额外**再创建一个软链接/目录映射，指向 `~/.agents/skills/codespec`（推荐这样做，不需要改动任何 skill 文档）。
+如果你的工具需要从其它目录加载 skills：
+- 推荐直接在安装时使用 `./scripts/install.sh --path <skills-root>`（或 Windows 的 `-Path "<skills-root>"`）
+- 或者你也可以**额外**再创建一个软链接/目录映射，指向 `~/.agents/skills/codespec`（不需要改动任何 skill 文档）
 
 macOS/Linux（bash/zsh）示例：
 
